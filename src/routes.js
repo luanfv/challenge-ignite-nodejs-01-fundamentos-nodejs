@@ -1,17 +1,24 @@
 import { randomUUID } from 'node:crypto';
+import { buildRoutePath } from './utils/build-route-path.js'
 
 const database = [];
 
 export const routes = {
   POST: {
-    path: '/tasks',
+    path: buildRoutePath('/tasks'),
     handler: (request, response) => {
-      const { title, describe } = request.body;
+      const { title, description } = request.body;
+
+      if (!title || !description) {
+        response.writeHead(400);
+
+        return;
+      }
 
       const task = {
         id: randomUUID(),
         title,
-        describe,
+        description,
         completed_at: null,
         created_at: new Date(),
         updated_at: new Date(),
@@ -24,18 +31,95 @@ export const routes = {
     },
   },
   GET: {
-    path: '/tasks',
+    path: buildRoutePath('/tasks'),
     handler: (_request, _response) => {
       return database;
     },
   },
   PUT: {
-    path: '/tasks/:id',
+    path: buildRoutePath('/tasks/:id'),
+    handler: (request, response) => {
+      const { id } = request.params;
+      const { title, description } = request.body;
+
+      if (!title || !description || !id) {
+        response.writeHead(400);
+
+        return;
+      }
+
+      const indexTask = database.findIndex((item) => item.id === id);
+
+      if (indexTask === -1) {
+        response.writeHead(404);
+
+        return { message: 'Task not found' };
+      }
+
+      const updatedTask = {
+        ...database[indexTask],
+        title,
+        description,
+        updated_at: new Date(),
+      };
+
+      database[indexTask] = updatedTask;
+
+      return updatedTask;
+    },
   },
   PATCH: {
-    path: '/tasks/:id/complete',
+    path: buildRoutePath('/tasks/:id/complete'),
+    handler: (request, response) => {
+      const { id } = request.params;
+
+      if (!id) {
+        response.writeHead(400);
+
+        return;
+      }
+
+      const indexTask = database.findIndex((item) => item.id === id);
+
+      if (indexTask === -1) {
+        response.writeHead(404);
+
+        return { message: 'Task not found' };
+      }
+
+      const updatedTask = {
+        ...database[indexTask],
+        completed_at: new Date(),
+        updated_at: new Date(),
+      };
+
+      database[indexTask] = updatedTask;
+
+      return updatedTask;
+    },
   },
   DELETE: {
-    path: '/tasks/:id',
+    path: buildRoutePath('/tasks/:id'),
+    handler: (request, response) => {
+      const { id } = request.params;
+
+      if (!id) {
+        response.writeHead(400);
+
+        return;
+      }
+
+      const indexTask = database.findIndex((item) => item.id === id);
+
+      if (indexTask === -1) {
+        response.writeHead(404);
+
+        return { message: 'Task not found' };
+      }
+
+      database.splice(indexTask, 1);
+
+      return;
+    },
   },
 };
